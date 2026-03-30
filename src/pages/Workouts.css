@@ -1,0 +1,167 @@
+.workouts-page {}
+
+/* Workout list */
+.workout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Workout card */
+.workout-card {
+  border-left: 3px solid var(--accent);
+}
+
+.workout-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.workout-card-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.workout-card-date {
+  margin-top: 2px;
+}
+
+.workout-card-actions {}
+
+/* Expanded details */
+.workout-card-details {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.workout-notes {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+.workout-detail-exercise {
+  margin-bottom: 12px;
+}
+
+.workout-detail-ex-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+
+.ml-8 { margin-left: 8px; }
+
+.detail-sets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.detail-sets-table th {
+  text-align: left;
+  padding: 4px 12px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-sets-table td {
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-sets-table tbody tr:last-child td { border-bottom: none; }
+
+/* Exercise block (form) */
+.exercise-block {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.exercise-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.exercise-header-inputs {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.exercise-cat-select {
+  width: auto;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+/* Sets table */
+.sets-table-wrap {
+  overflow-x: auto;
+}
+
+.sets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  min-width: 280px;
+}
+
+.sets-table th {
+  text-align: center;
+  padding: 4px 8px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sets-table td {
+  padding: 5px 4px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.sets-table tbody tr:last-child td { border-bottom: none; }
+
+.set-num {
+  width: 32px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.set-input {
+  width: 72px;
+  text-align: center;
+}
+
+.add-set-btn {
+  font-size: 0.8rem;
+}
+
+/* Workout modal */
+.workout-modal {
+  max-width: 680px;
+}
+
+.exercises-section {}

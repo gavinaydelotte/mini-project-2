@@ -1,0 +1,143 @@
+.dashboard-page {}
+
+.dash-greeting h1 { margin-bottom: 2px; }
+
+/* Stat card calorie variant */
+.dash-cal-card .stat-goal-label {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.stat-goal-label {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* Macros */
+.dash-macros-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.macro-bar-row {}
+
+.macro-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.macro-bar-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.macro-bar-values {
+  font-size: 0.85rem;
+}
+
+.macro-bar-values strong {
+  color: var(--text);
+}
+
+/* Macro pills */
+.dash-macro-pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.macro-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-width: 72px;
+  border-top: 2px solid var(--pill-color);
+}
+
+.macro-pill-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--pill-color);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.macro-pill-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Meals */
+.dash-meal-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash-meal-group {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.dash-meal-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.dash-meal-type {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.dash-meal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  padding: 2px 0;
+  gap: 8px;
+}
+
+/* Workout card */
+.dash-workout-item {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.dash-workout-item:last-child { margin-bottom: 0; }
+
+.dash-workout-name {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+
+.dash-exercise-row {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 2px 0;
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+  margin-top: 6px;
+}

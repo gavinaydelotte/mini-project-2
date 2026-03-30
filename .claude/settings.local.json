@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.nal.usda.gov)",
+      "Bash(cmd /c \"where node 2>&1 && where npm 2>&1\")"
+    ]
+  }
+}
