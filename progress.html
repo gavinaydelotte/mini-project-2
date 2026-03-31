@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FitTrack — Progress</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <!-- Chart.js via CDN — no install needed -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .chart-wrap { position: relative; height: 260px; }
+    .range-btns { display: flex; gap: 4px; }
+
+    /* BMI */
+    .bmi-result { display: flex; align-items: flex-start; gap: 24px; background: var(--bg-elevated); border-radius: var(--radius-sm); padding: 16px; margin-top: 4px; flex-wrap: wrap; }
+    .bmi-val  { font-size: 3rem; font-weight: 700; line-height: 1; letter-spacing: -2px; min-width: 90px; }
+    .bmi-scale { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .bmi-item { display: flex; flex-direction: column; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; min-width: 80px; }
+    .bmi-range { font-size: .75rem; font-weight: 600; margin-bottom: 2px; }
+    .bmi-label { font-size: .7rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><span>FitTrack</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html"     class="nav-link">Dashboard</a></li>
+    <li><a href="nutrition.html" class="nav-link">Nutrition</a></li>
+    <li><a href="workouts.html"  class="nav-link">Workouts</a></li>
+    <li><a href="progress.html"  class="nav-link active">Progress</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <h1>Progress</h1>
+    <p>Track your weight, body metrics, and nutrition trends over time</p>
+  </div>
+
+  <!-- Log weight -->
+  <div class="card mb-20">
+    <h3 class="mb-16">Log Weight</h3>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" id="w-date" type="date"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Weight (kg)</label>
+        <input class="form-input" id="w-kg" type="number" step="0.1" placeholder="e.g. 74.5"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <input class="form-input" id="w-notes" placeholder="e.g. morning weigh-in"/>
+      </div>
+    </div>
+    <div class="flex-end">
+      <button class="btn btn-green" onclick="logWeight()">Add Entry</button>
+    </div>
+  </div>
+
+  <!-- Quick stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Current Weight</div>
+      <div class="stat-value text-green" id="st-current">—</div>
+      <div class="stat-sub" id="st-current-sub"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">30-Day Change</div>
+      <div class="stat-value" id="st-change">—</div>
+      <div class="stat-sub" id="st-change-sub">Not enough data</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg. Daily Calories (7d)</div>
+      <div class="stat-value text-accent" id="st-avg-cal">—</div>
+      <div class="stat-sub">7-day average</div>
+    </div>
+  </div>
+
+  <!-- Weight chart -->
+  <div class="card mb-20">
+    <div class="card-header">
+      <h3>Weight Progress</h3>
+      <div class="range-btns">
+        <button class="btn btn-xs btn-secondary" id="r14"  onclick="setRange(14)">14d</button>
+        <button class="btn btn-xs btn-primary"   id="r30"  onclick="setRange(30)">30d</button>
+        <button class="btn btn-xs btn-secondary" id="r90"  onclick="setRange(90)">90d</button>
+        <button class="btn btn-xs btn-secondary" id="rall" onclick="setRange(0)">All</button>
+      </div>
+    </div>
+    <div id="weight-chart-empty" class="empty-state hidden">
+      <p>Log at least 2 weight entries to see your progress chart.</p>
+    </div>
+    <div class="chart-wrap" id="weight-chart-wrap">
+      <canvas id="weightChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Calorie trend -->
+  <div class="card mb-20">
+    <div class="card-header">
+      <h3>Calorie Intake — Last 14 Days</h3>
+      <span id="cal-goal-badge" class="badge badge-purple hidden"></span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="calChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Workout frequency -->
+  <div class="card mb-20">
+    <h3 class="mb-16">Workout Frequency — Last 10 Weeks</h3>
+    <div class="chart-wrap">
+      <canvas id="woChart"></canvas>
+    </div>
+  </div>
+
+  <!-- BMI Calculator -->
+  <div class="card mb-20">
+    <h3 class="mb-4">BMI Calculator</h3>
+    <p class="text-muted font-sm mb-16">Body Mass Index — a screening tool, not a diagnostic measure.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Height (cm)</label>
+        <input class="form-input" id="bmi-h" type="number" placeholder="e.g. 175" oninput="calcBmi()"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Weight (kg)</label>
+        <input class="form-input" id="bmi-w" type="number" step="0.1" placeholder="e.g. 75" oninput="calcBmi()"/>
+      </div>
+    </div>
+    <div id="bmi-result" class="hidden"></div>
+  </div>
+
+  <!-- Weight history table -->
+  <div class="card">
+    <h3 class="mb-16">Weight History</h3>
+    <div id="weight-table"></div>
+  </div>
+
+</div>
+
+<script src="js/storage.js"></script>
+<script>
+// ── Chart defaults ─────────────────────────────────────────────────────────
+Chart.defaults.color = '#8b7355';
+Chart.defaults.borderColor = '#ddd0b8';
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+Chart.defaults.font.size   = 11;
+
+const chartOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: { backgroundColor:'#ffffff', borderColor:'#ddd0b8', borderWidth:1, titleColor:'#8b7355', bodyColor:'#1c1507', padding:10 } },
+  scales: {
+    x: { grid: { color:'#f2e8d5' }, ticks: { maxRotation:45 } },
+    y: { grid: { color:'#f2e8d5' } },
+  },
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+let weightRange = 30;
+let wChart, cChart, woChart;
+
+// ── Init date ──────────────────────────────────────────────────────────────
+document.getElementById('w-date').value = todayStr();
+
+// Pre-fill BMI from profile
+const profile = getProfile();
+if (profile.heightCm) document.getElementById('bmi-h').value = profile.heightCm;
+
+// ── Log weight ──────────────────────────────────────────────────────────────
+function logWeight() {
+  const kg = parseFloat(document.getElementById('w-kg').value);
+  if (!kg) return;
+  addWeight({
+    id:         genId(),
+    date:       document.getElementById('w-date').value || todayStr(),
+    weightKg:   kg,
+    notes:      document.getElementById('w-notes').value.trim(),
+    recordedAt: new Date().toISOString(),
+  });
+  document.getElementById('w-kg').value    = '';
+  document.getElementById('w-notes').value = '';
+  document.getElementById('bmi-w').value   = kg;
+  calcBmi();
+  renderAll();
+}
+
+// ── Range ──────────────────────────────────────────────────────────────────
+function setRange(r) {
+  weightRange = r;
+  ['r14','r30','r90','rall'].forEach(id => {
+    document.getElementById(id).className = 'btn btn-xs btn-secondary';
+  });
+  const key = r === 14 ? 'r14' : r === 30 ? 'r30' : r === 90 ? 'r90' : 'rall';
+  document.getElementById(key).className = 'btn btn-xs btn-primary';
+  buildWeightChart();
+}
+
+// ── Render all ─────────────────────────────────────────────────────────────
+function renderAll() {
+  const entries = getWeights().sort((a,b) => a.date.localeCompare(b.date));
+  const latest  = entries[entries.length - 1];
+
+  // Stats
+  if (latest) {
+    document.getElementById('st-current').textContent     = latest.weightKg + ' kg';
+    document.getElementById('st-current-sub').textContent = 'as of ' + latest.date;
+  }
+
+  const cutoff30 = new Date(); cutoff30.setDate(cutoff30.getDate() - 30);
+  const cut30Str = cutoff30.toISOString().split('T')[0];
+  const first30  = entries.find(e => e.date >= cut30Str);
+  if (latest && first30 && latest.id !== first30.id) {
+    const delta = (latest.weightKg - first30.weightKg).toFixed(1);
+    const el    = document.getElementById('st-change');
+    el.textContent = (parseFloat(delta) > 0 ? '+' : '') + delta + ' kg';
+    el.style.color = parseFloat(delta) < 0 ? 'var(--green)' : parseFloat(delta) > 0 ? 'var(--red)' : '';
+    document.getElementById('st-change-sub').textContent = 'compared to 30 days ago';
+  }
+
+  // Avg cal 7d
+  const meals = getMeals();
+  let calSum = 0, calDays = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const str = d.toISOString().split('T')[0];
+    const dayCal = meals.filter(m => m.date === str).reduce((s,m) => s+(m.nutrients.calories||0), 0);
+    if (dayCal > 0) { calSum += dayCal; calDays++; }
+  }
+  if (calDays) document.getElementById('st-avg-cal').textContent = Math.round(calSum/calDays).toLocaleString() + ' kcal';
+
+  // Cal goal badge
+  if (profile.calorieGoal) {
+    const badge = document.getElementById('cal-goal-badge');
+    badge.textContent = `Goal: ${profile.calorieGoal} kcal`;
+    badge.classList.remove('hidden');
+  }
+
+  buildWeightChart();
+  buildCalChart();
+  buildWoChart();
+  buildWeightTable();
+}
+
+// ── Weight chart ───────────────────────────────────────────────────────────
+function buildWeightChart() {
+  const all = getWeights().sort((a,b) => a.date.localeCompare(b.date));
+  const data = weightRange > 0 ? all.slice(-weightRange) : all;
+
+  if (data.length < 2) {
+    document.getElementById('weight-chart-wrap').classList.add('hidden');
+    document.getElementById('weight-chart-empty').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('weight-chart-wrap').classList.remove('hidden');
+  document.getElementById('weight-chart-empty').classList.add('hidden');
+
+  const labels = data.map(e => e.date.slice(5));
+  const vals   = data.map(e => e.weightKg);
+  const minV   = Math.floor(Math.min(...vals) - 1);
+  const maxV   = Math.ceil(Math.max(...vals)  + 1);
+
+  if (wChart) wChart.destroy();
+  wChart = new Chart(document.getElementById('weightChart'), {
+    type: 'line',
+    data: { labels, datasets: [{
+      data: vals,
+      borderColor: '#22c55e',
+      backgroundColor: 'rgba(34,197,94,.1)',
+      borderWidth: 2.5,
+      pointRadius: 3,
+      pointBackgroundColor: '#22c55e',
+      tension: 0.3,
+      fill: true,
+    }]},
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, min: minV, max: maxV, ticks: { callback: v => v+' kg' } } } },
+  });
+}
+
+// ── Calorie chart ──────────────────────────────────────────────────────────
+function buildCalChart() {
+  const meals = getMeals();
+  const labels = [], vals = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const str = d.toISOString().split('T')[0];
+    labels.push(str.slice(5));
+    vals.push(Math.round(meals.filter(m => m.date === str).reduce((s,m) => s+(m.nutrients.calories||0), 0)));
+  }
+
+  const goalLine = profile.calorieGoal ? {
+    id: 'goalLine',
+    beforeDraw: (chart) => {
+      if (!profile.calorieGoal) return;
+      const { ctx, chartArea: { top, bottom, left, right }, scales } = chart;
+      const y = scales.y.getPixelForValue(profile.calorieGoal);
+      ctx.save();
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+      ctx.restore();
+    }
+  } : null;
+
+  if (cChart) cChart.destroy();
+  cChart = new Chart(document.getElementById('calChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{
+      data: vals,
+      backgroundColor: vals.map(v => profile.calorieGoal && v > profile.calorieGoal ? 'rgba(220,38,38,.7)' : 'rgba(8,145,178,.7)'),
+      borderRadius: 4,
+      borderSkipped: false,
+    }]},
+    options: {
+      ...chartOpts,
+      plugins: { ...chartOpts.plugins, tooltip: { ...chartOpts.plugins.tooltip, callbacks: { label: ctx => `${ctx.raw.toLocaleString()} kcal` } } },
+    },
+    plugins: goalLine ? [goalLine] : [],
+  });
+}
+
+// ── Workout frequency chart ────────────────────────────────────────────────
+function buildWoChart() {
+  const wos = getWorkouts();
+  const labels = [], vals = [];
+  for (let i = 9; i >= 0; i--) {
+    const end   = new Date(); end.setDate(end.getDate() - i*7);
+    const start = new Date(end); start.setDate(end.getDate() - 6);
+    const s = start.toISOString().split('T')[0];
+    const e = end.toISOString().split('T')[0];
+    labels.push(end.toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+    vals.push(wos.filter(w => w.date >= s && w.date <= e).length);
+  }
+  if (woChart) woChart.destroy();
+  woChart = new Chart(document.getElementById('woChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{
+      data: vals,
+      backgroundColor: 'rgba(29,78,216,.7)',
+      borderRadius: 4,
+      borderSkipped: false,
+    }]},
+    options: {
+      ...chartOpts,
+      scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, ticks: { stepSize: 1 } } },
+      plugins: { ...chartOpts.plugins, tooltip: { ...chartOpts.plugins.tooltip, callbacks: { label: ctx => `${ctx.raw} workout${ctx.raw!==1?'s':''}` } } },
+    },
+  });
+}
+
+// ── BMI ────────────────────────────────────────────────────────────────────
+function calcBmi() {
+  const h = Number(document.getElementById('bmi-h').value);
+  const w = Number(document.getElementById('bmi-w').value);
+  const el = document.getElementById('bmi-result');
+  if (!h || !w) { el.classList.add('hidden'); return; }
+  const bmi  = Math.round((w / Math.pow(h/100, 2)) * 10) / 10;
+  const cats = [
+    { min:0,    max:18.5, label:'Underweight', color:'var(--orange)' },
+    { min:18.5, max:25,   label:'Normal weight',  color:'var(--green)' },
+    { min:25,   max:30,   label:'Overweight',   color:'var(--orange)' },
+    { min:30,   max:99,   label:'Obese',        color:'var(--red)' },
+  ];
+  const cat = cats.find(c => bmi >= c.min && bmi < c.max) || cats[cats.length-1];
+  el.innerHTML = `<div class="bmi-result">
+    <div class="bmi-val" style="color:${cat.color}">${bmi}</div>
+    <div>
+      <span class="badge" style="background:rgba(0,0,0,.2);color:${cat.color};font-size:.85rem;padding:4px 14px">${cat.label}</span>
+      <div class="bmi-scale">
+        ${cats.map(c=>`<div class="bmi-item">
+          <span class="bmi-range" style="color:${c.color}">${c.min < 18.5?'< 18.5':c.min===18.5?'18.5–24.9':c.min===25?'25–29.9':'≥ 30'}</span>
+          <span class="bmi-label">${c.label}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+  el.classList.remove('hidden');
+}
+
+// ── Weight table ───────────────────────────────────────────────────────────
+function buildWeightTable() {
+  const entries = getWeights().sort((a,b) => b.date.localeCompare(a.date));
+  const container = document.getElementById('weight-table');
+  if (!entries.length) {
+    container.innerHTML = `<div class="empty-state"><p>No weight entries yet. Log your first weigh-in above.</p></div>`;
+    return;
+  }
+  const rows = entries.map((e, i, arr) => {
+    const prev  = arr[i+1];
+    const delta = prev ? (e.weightKg - prev.weightKg).toFixed(1) : null;
+    let deltaHtml = '';
+    if (delta !== null) {
+      const col = parseFloat(delta) < 0 ? 'var(--green)' : parseFloat(delta) > 0 ? 'var(--red)' : 'var(--text-muted)';
+      const arrow = parseFloat(delta)>0?'▲ +':parseFloat(delta)<0?'▼ ':'— ';
+      deltaHtml = `<span style="color:${col}">${arrow}${Math.abs(parseFloat(delta))} kg</span>`;
+    }
+    return `<tr>
+      <td>${fmtDate(e.date)}</td>
+      <td><strong>${e.weightKg} kg</strong></td>
+      <td>${deltaHtml}</td>
+      <td class="text-muted font-sm">${e.notes||'—'}</td>
+      <td><button class="btn btn-danger btn-xs" onclick="removeWeight('${e.id}')">Delete</button></td>
+    </tr>`;
+  }).join('');
+  container.innerHTML = `<div style="overflow-x:auto"><table class="data-table">
+    <thead><tr><th>Date</th><th>Weight</th><th>Change</th><th>Notes</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function removeWeight(id) {
+  if (!confirm('Delete this entry?')) return;
+  deleteWeight(id);
+  renderAll();
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>

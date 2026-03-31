@@ -1,13 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FitTrack — Fitness Tracker</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💪</text></svg>" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitTrack — Dashboard</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    /* ── Macro bars ────────────────────────────────────────────── */
+    .macro-bar-row { margin-bottom: 12px; }
+    .macro-bar-header { display: flex; justify-content: space-between; font-size: .85rem; margin-bottom: 6px; }
+    .macro-bar-header span:first-child { color: var(--text-muted); font-weight: 500; }
+
+    /* ── Macro pills ───────────────────────────────────────────── */
+    .macro-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .macro-pill {
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 16px; min-width: 72px;
+    }
+    .macro-pill-val   { font-size: 1.1rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .macro-pill-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── Meal groups in dashboard ──────────────────────────────── */
+    .dash-meal-group { background: var(--bg-elevated); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; }
+    .dash-meal-group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .dash-meal-type { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
+    .dash-meal-item { display: flex; justify-content: space-between; font-size: .85rem; padding: 2px 0; gap: 8px; }
+    .dash-meal-item span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Workout card on dash ──────────────────────────────────── */
+    .dash-workout-item { background: var(--bg-elevated); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px; }
+    .dash-workout-name { font-weight: 600; font-size: 1rem; }
+    .dash-exercise-row { font-size: .82rem; color: var(--text-muted); border-left: 2px solid var(--border); padding-left: 8px; margin-top: 6px; }
+
+    /* ── Cal card ──────────────────────────────────────────────── */
+    .cal-goal-text { font-size: 1rem; font-weight: 400; color: var(--text-muted); letter-spacing: 0; }
+
+    /* ── Profile modal ─────────────────────────────────────────── */
+  </style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══════════════════════════════════════════════════════════════ -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">
+    <span>FitTrack</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html"       class="nav-link active">Dashboard</a></li>
+    <li><a href="nutrition.html"   class="nav-link">Nutrition</a></li>
+    <li><a href="workouts.html"    class="nav-link">Workouts</a></li>
+    <li><a href="progress.html"    class="nav-link">Progress</a></li>
+  </ul>
+</nav>
+
+<!-- ═══ PAGE ═════════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- Greeting -->
+  <div class="flex-between mb-24">
+    <div>
+      <h1 id="greeting">Good morning!</h1>
+      <p id="today-date" class="text-muted"></p>
+    </div>
+    <button class="btn btn-secondary" onclick="openProfile()">Profile</button>
+  </div>
+
+  <!-- Setup prompt -->
+  <div id="setup-prompt" class="alert alert-info mb-24 hidden">
+    <strong>Welcome to FitTrack!</strong> Set up your profile to personalise your goals.
+    <button class="btn btn-sm btn-primary" style="margin-left:8px" onclick="openProfile()">Set Up Profile</button>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="stats-grid">
+    <!-- Calories -->
+    <div class="stat-card">
+      <div class="stat-label">Calories Today</div>
+      <div class="stat-value"><span id="cal-consumed">0</span><span class="cal-goal-text" id="cal-goal-display">/2000</span></div>
+      <div class="progress-bar mt-8">
+        <div class="progress-bar-fill" id="cal-bar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--green))"></div>
+      </div>
+      <div class="stat-sub mt-4" id="cal-remaining">2000 kcal remaining</div>
+    </div>
+
+    <!-- Weight -->
+    <div class="stat-card">
+      <div class="stat-label">Current Weight</div>
+      <div class="stat-value text-green" id="weight-val">—</div>
+      <div class="stat-sub" id="weight-sub">No weight logged yet.</div>
+      <a href="progress.html" class="btn btn-xs btn-ghost mt-8">Log weight →</a>
+    </div>
+
+    <!-- Workouts -->
+    <div class="stat-card">
+      <div class="stat-label">Workouts This Week</div>
+      <div class="stat-value text-accent" id="week-workouts">0</div>
+      <div class="stat-sub" id="streak-text">Start your streak today!</div>
+      <a href="workouts.html" class="btn btn-xs btn-ghost mt-8">Log workout →</a>
+    </div>
+  </div>
+
+  <!-- Macros -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Today's Macros</h3>
+      <a href="nutrition.html" class="btn btn-sm btn-ghost">+ Add Food</a>
+    </div>
+    <div id="macro-bars"></div>
+    <div class="macro-pills" id="macro-pills"></div>
+  </div>
+
+  <!-- Meals + Workout -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <h3>Today's Meals</h3>
+        <a href="nutrition.html" class="btn btn-sm btn-primary">+ Log Food</a>
+      </div>
+      <div id="dash-meals">
+        <div class="empty-state" style="padding:24px 0">
+          <p>No meals logged today.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>Today's Workout</h3>
+        <a href="workouts.html" class="btn btn-sm btn-primary">+ Log Workout</a>
+      </div>
+      <div id="dash-workout">
+        <div class="empty-state" style="padding:24px 0">
+          <p>No workout logged today.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE MODAL ════════════════════════════════════════════════════════ -->
+<div id="profile-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeProfile()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Your Profile</h2>
+      <button class="btn btn-ghost btn-icon" onclick="closeProfile()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input class="form-input" id="p-name" placeholder="Your name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Age</label>
+          <input class="form-input" id="p-age" type="number" placeholder="e.g. 28" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Height (cm)</label>
+        <input class="form-input" id="p-height" type="number" placeholder="e.g. 175" />
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);margin-bottom:12px">Daily Goals</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Calorie Goal (kcal)</label>
+          <input class="form-input" id="p-cal" type="number" value="2000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Protein Goal (g)</label>
+          <input class="form-input" id="p-protein" type="number" value="150" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Carbs Goal (g)</label>
+          <input class="form-input" id="p-carbs" type="number" value="200" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fat Goal (g)</label>
+          <input class="form-input" id="p-fat" type="number" value="65" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeProfile()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProfileForm()">Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script>
+  // ── Greeting ──────────────────────────────────────────────────────────────
+  const h = new Date().getHours();
+  const greetWord = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const profile   = getProfile();
+  document.getElementById('greeting').textContent =
+    greetWord + (profile.name ? `, ${profile.name}` : '') + '!';
+  document.getElementById('today-date').textContent = fmtDateLong(todayStr());
+
+  if (!profile.name) document.getElementById('setup-prompt').classList.remove('hidden');
+
+  // ── Meals ─────────────────────────────────────────────────────────────────
+  const today   = todayStr();
+  const meals   = getMeals().filter(m => m.date === today);
+  const cGoal   = profile.calorieGoal  || 2000;
+  const pGoal   = profile.proteinGoal  || 150;
+  const carbGoal= profile.carbsGoal    || 200;
+  const fGoal   = profile.fatGoal      || 65;
+
+  const totals = meals.reduce((a, m) => ({
+    cal:  a.cal  + (m.nutrients.calories || 0),
+    prot: a.prot + (m.nutrients.protein  || 0),
+    carb: a.carb + (m.nutrients.carbs    || 0),
+    fat:  a.fat  + (m.nutrients.fat      || 0),
+    fib:  a.fib  + (m.nutrients.fiber    || 0),
+  }), { cal:0, prot:0, carb:0, fat:0, fib:0 });
+
+  // Cal card
+  const calPct = Math.min((totals.cal / cGoal) * 100, 100);
+  document.getElementById('cal-consumed').textContent   = Math.round(totals.cal).toLocaleString();
+  document.getElementById('cal-goal-display').textContent = `/${cGoal.toLocaleString()}`;
+  document.getElementById('cal-bar').style.width        = calPct + '%';
+  document.getElementById('cal-bar').style.background   = totals.cal > cGoal ? 'var(--red)' : 'linear-gradient(90deg,var(--accent),var(--green))';
+  const rem = cGoal - Math.round(totals.cal);
+  document.getElementById('cal-remaining').textContent  =
+    rem > 0 ? `${rem.toLocaleString()} kcal remaining` : `${Math.abs(rem).toLocaleString()} kcal over goal`;
+  document.getElementById('cal-remaining').style.color  = rem < 0 ? 'var(--red)' : '';
+
+  // Macro bars
+  function macroBar(label, value, goal, color) {
+    const pct = goal > 0 ? Math.min((value / goal) * 100, 100) : 0;
+    return `<div class="macro-bar-row">
+      <div class="macro-bar-header">
+        <span>${label}</span>
+        <span><strong>${Math.round(value)}g</strong> <span class="text-muted">/ ${goal}g</span></span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('macro-bars').innerHTML =
+    macroBar('Protein', totals.prot, pGoal, 'var(--blue)') +
+    macroBar('Carbohydrates', totals.carb, carbGoal, 'var(--orange)') +
+    macroBar('Fat', totals.fat, fGoal, 'var(--accent)');
+
+  // Macro pills
+  const pillData = [
+    { label:'Calories', val: Math.round(totals.cal) + ' kcal', color:'var(--accent)' },
+    { label:'Protein',  val: Math.round(totals.prot)+'g',       color:'var(--blue)' },
+    { label:'Carbs',    val: Math.round(totals.carb)+'g',       color:'var(--orange)' },
+    { label:'Fat',      val: Math.round(totals.fat)+'g',        color:'var(--accent)' },
+    { label:'Fiber',    val: Math.round(totals.fib)+'g',        color:'var(--green)' },
+  ];
+  document.getElementById('macro-pills').innerHTML = pillData.map(p =>
+    `<div class="macro-pill" style="border-top:2px solid ${p.color}">
+       <span class="macro-pill-val" style="color:${p.color}">${p.val}</span>
+       <span class="macro-pill-label">${p.label}</span>
+     </div>`
+  ).join('');
+
+  // Meal groups
+  const types = ['breakfast','lunch','dinner','snacks'];
+  const typeIcons = { breakfast:'', lunch:'', dinner:'', snacks:'' };
+  const groups = {};
+  types.forEach(t => groups[t] = meals.filter(m => m.mealType === t));
+  const hasMeals = meals.length > 0;
+  if (hasMeals) {
+    document.getElementById('dash-meals').innerHTML = types.map(t => {
+      if (!groups[t].length) return '';
+      const gcal = groups[t].reduce((s,m) => s + (m.nutrients.calories||0), 0);
+      return `<div class="dash-meal-group">
+        <div class="dash-meal-group-header">
+          <span class="dash-meal-type">${t.charAt(0).toUpperCase()+t.slice(1)}</span>
+          <span class="text-muted font-sm">${Math.round(gcal)} kcal</span>
+        </div>
+        ${groups[t].map(m => `<div class="dash-meal-item">
+          <span>${m.description}</span>
+          <span class="text-muted font-xs">${m.nutrients.calories} kcal</span>
+        </div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+
+  // ── Workouts ──────────────────────────────────────────────────────────────
+  const workouts    = getWorkouts();
+  const todayWO     = workouts.filter(w => w.date === today);
+  const weekStart   = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekKey     = weekStart.toISOString().split('T')[0];
+  const weekWOs     = workouts.filter(w => w.date >= weekKey);
+  document.getElementById('week-workouts').textContent = weekWOs.length;
+
+  // Streak
+  let streak = 0; const woSet = new Set(workouts.map(w => w.date));
+  const chk = new Date();
+  while (woSet.has(chk.toISOString().split('T')[0])) { streak++; chk.setDate(chk.getDate()-1); }
+  document.getElementById('streak-text').textContent =
+    streak > 0 ? `${streak}-day streak` : 'Start your streak today!';
+
+  if (todayWO.length) {
+    document.getElementById('dash-workout').innerHTML = todayWO.map(w => `
+      <div class="dash-workout-item">
+        <div class="dash-workout-name">${w.name}</div>
+        <div class="flex-center gap-6 mt-4 flex-wrap">
+          ${w.durationMinutes ? `<span class="badge badge-purple">${w.durationMinutes} min</span>` : ''}
+          <span class="badge badge-blue">${w.exercises.length} exercises</span>
+          <span class="badge badge-green">${w.exercises.reduce((s,e)=>s+e.sets.length,0)} sets</span>
+        </div>
+        ${w.exercises.slice(0,3).map(e =>
+          `<div class="dash-exercise-row">${e.name} — ${e.sets.length} set${e.sets.length!==1?'s':''}</div>`
+        ).join('')}
+        ${w.exercises.length>3 ? `<div class="text-muted font-xs mt-4">+${w.exercises.length-3} more exercises</div>` : ''}
+      </div>`).join('');
+  }
+
+  // ── Weight ────────────────────────────────────────────────────────────────
+  const weights = getWeights().sort((a,b) => b.date.localeCompare(a.date));
+  if (weights.length) {
+    document.getElementById('weight-val').textContent = weights[0].weightKg + ' kg';
+    if (weights.length >= 2) {
+      const delta = (weights[0].weightKg - weights[1].weightKg).toFixed(1);
+      const arrow = parseFloat(delta) > 0 ? '▲' : parseFloat(delta) < 0 ? '▼' : '–';
+      const col   = parseFloat(delta) < 0 ? 'var(--green)' : parseFloat(delta) > 0 ? 'var(--red)' : '';
+      document.getElementById('weight-sub').innerHTML =
+        `<span style="color:${col}">${arrow} ${Math.abs(parseFloat(delta))} kg from last entry</span>`;
+    } else {
+      document.getElementById('weight-sub').textContent = `as of ${weights[0].date}`;
+    }
+  }
+
+  // ── Profile modal ─────────────────────────────────────────────────────────
+  function openProfile() {
+    const p = getProfile();
+    document.getElementById('p-name').value   = p.name || '';
+    document.getElementById('p-age').value    = p.age  || '';
+    document.getElementById('p-height').value = p.heightCm || '';
+    document.getElementById('p-cal').value    = p.calorieGoal  || 2000;
+    document.getElementById('p-protein').value= p.proteinGoal  || 150;
+    document.getElementById('p-carbs').value  = p.carbsGoal    || 200;
+    document.getElementById('p-fat').value    = p.fatGoal      || 65;
+    document.getElementById('profile-modal').classList.remove('hidden');
+  }
+
+  function closeProfile() {
+    document.getElementById('profile-modal').classList.add('hidden');
+  }
+
+  function saveProfileForm() {
+    saveProfile({
+      name:        document.getElementById('p-name').value.trim(),
+      age:         document.getElementById('p-age').value,
+      heightCm:    document.getElementById('p-height').value,
+      calorieGoal: Number(document.getElementById('p-cal').value)     || 2000,
+      proteinGoal: Number(document.getElementById('p-protein').value) || 150,
+      carbsGoal:   Number(document.getElementById('p-carbs').value)   || 200,
+      fatGoal:     Number(document.getElementById('p-fat').value)     || 65,
+    });
+    location.reload();
+  }
+</script>
+</body>
 </html>

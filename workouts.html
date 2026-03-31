@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FitTrack — Workouts</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <style>
+    /* ── Exercise block ──────────────────────────────── */
+    .ex-block {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .ex-header { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .ex-header input  { flex: 1; min-width: 0; }
+    .ex-header select { flex-shrink: 0; width: 140px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 9px 10px; font-size: .875rem; font-family: inherit; }
+    .ex-header select:focus { outline: none; border-color: var(--accent); }
+
+    .sets-wrap { overflow-x: auto; }
+    .sets-table { width: 100%; border-collapse: collapse; font-size: .875rem; min-width: 240px; }
+    .sets-table th { text-align: center; padding: 4px 8px; color: var(--text-muted); font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+    .sets-table td { padding: 5px 4px; text-align: center; border-bottom: 1px solid var(--border); }
+    .sets-table tbody tr:last-child td { border-bottom: none; }
+    .set-num { color: var(--text-muted); font-size: .8rem; width: 28px; }
+    .set-input { width: 70px; text-align: center; padding: 5px 6px; font-size: .8rem; }
+
+    /* ── Workout card history ────────────────────────── */
+    .wo-card { border-left: 3px solid var(--accent); margin-bottom: 12px; }
+    .wo-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .wo-name { font-size: 1.05rem; font-weight: 600; }
+    .wo-date { color: var(--text-muted); font-size: .85rem; margin-top: 2px; }
+    .wo-details { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .wo-notes { background: var(--bg-elevated); border-radius: var(--radius-sm); padding: 8px 12px; font-size: .875rem; color: var(--text-muted); font-style: italic; margin-bottom: 10px; }
+    .wo-ex-name { font-weight: 600; font-size: .9rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+
+    .det-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .det-table th { text-align: left; padding: 4px 10px; color: var(--text-muted); font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+    .det-table td { padding: 5px 10px; border-bottom: 1px solid var(--border); }
+    .det-table tbody tr:last-child td { border-bottom: none; }
+
+    .wo-modal { max-width: 700px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><span>FitTrack</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html"     class="nav-link">Dashboard</a></li>
+    <li><a href="nutrition.html" class="nav-link">Nutrition</a></li>
+    <li><a href="workouts.html"  class="nav-link active">Workouts</a></li>
+    <li><a href="progress.html"  class="nav-link">Progress</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+
+  <div class="page-header-row">
+    <div>
+      <h1>Workouts</h1>
+      <p>Log exercises, track sets, reps, and weights</p>
+    </div>
+    <button class="btn btn-primary" onclick="openWoModal()">+ Log Workout</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Workouts</div>
+      <div class="stat-value text-accent" id="st-total">0</div>
+      <div class="stat-sub" id="st-sets">0 total sets</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">This Week</div>
+      <div class="stat-value" id="st-week">0</div>
+      <div class="stat-sub" id="st-week-sub">Start your week strong!</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Last Workout</div>
+      <div class="stat-value" id="st-last-name" style="font-size:1.1rem;letter-spacing:-.3px">—</div>
+      <div class="stat-sub" id="st-last-date"></div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Workout History</h3>
+      <div class="flex-center gap-8">
+        <input type="date" id="filter-date" class="form-input" style="width:auto" onchange="renderHistory()" title="Filter by date"/>
+        <button class="btn btn-ghost btn-sm" id="clear-filter" onclick="clearFilter()" style="display:none">Clear</button>
+      </div>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+</div>
+
+<!-- ═══ WORKOUT MODAL ════════════════════════════════════════════════════════ -->
+<div id="wo-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeWoModal()">
+  <div class="modal wo-modal">
+    <div class="modal-header">
+      <h2>Log Workout</h2>
+      <button class="btn btn-ghost btn-icon" onclick="closeWoModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="wo-error" class="alert alert-error hidden"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Workout Name *</label>
+          <input class="form-input" id="wo-name" placeholder="e.g. Push Day, Morning Run, Leg Day"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" id="wo-date" type="date"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Duration (minutes)</label>
+          <input class="form-input" id="wo-dur" type="number" placeholder="Optional"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <input class="form-input" id="wo-notes" placeholder="Optional notes..."/>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="flex-between mb-12">
+        <h3>Exercises</h3>
+        <button class="btn btn-primary btn-sm" onclick="addExercise()">+ Add Exercise</button>
+      </div>
+      <div id="exercises-container">
+        <div id="ex-empty" class="empty-state" style="padding:20px 0">
+          <p>Click "Add Exercise" to build your workout</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeWoModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveWorkout()">Save Workout</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script>
+const CATS = [
+  {v:'strength',    l:'Strength'},
+  {v:'cardio',      l:'Cardio'},
+  {v:'bodyweight',  l:'Bodyweight'},
+  {v:'flexibility', l:'Flexibility'},
+  {v:'sport',       l:'Sport'},
+];
+const SUGGESTIONS = {
+  strength:    ['Bench Press','Squat','Deadlift','Overhead Press','Barbell Row','Pull-up','Lat Pulldown','Dumbbell Curl','Tricep Pushdown','Leg Press','Romanian Deadlift','Incline Bench Press'],
+  cardio:      ['Running','Cycling','Rowing','Jump Rope','Elliptical','Swimming','Stair Climber','HIIT'],
+  bodyweight:  ['Push-up','Pull-up','Dip','Bodyweight Squat','Lunge','Plank','Burpee','Mountain Climber','Sit-up'],
+  flexibility: ['Yoga','Static Stretch','Foam Rolling','Mobility Drill'],
+  sport:       ['Basketball','Soccer','Tennis','Swimming','Boxing'],
+};
+
+let exercises = [];
+
+// ─── Stats + History ────────────────────────────────────────────────────────
+function renderAll() {
+  const wos = getWorkouts().sort((a,b) => b.date.localeCompare(a.date) || (b.createdAt||'').localeCompare(a.createdAt||''));
+  const totalSets = wos.reduce((s,w) => s + w.exercises.reduce((ss,e) => ss + e.sets.length, 0), 0);
+
+  document.getElementById('st-total').textContent = wos.length;
+  document.getElementById('st-sets').textContent  = totalSets + ' total sets';
+
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekKey   = weekStart.toISOString().split('T')[0];
+  const weekCount = wos.filter(w => w.date >= weekKey).length;
+  document.getElementById('st-week').textContent     = weekCount;
+  document.getElementById('st-week-sub').textContent = weekCount > 0 ? 'Keep it up!' : 'Start your week strong!';
+
+  if (wos.length) {
+    document.getElementById('st-last-name').textContent = wos[0].name;
+    document.getElementById('st-last-date').textContent = wos[0].date;
+  }
+
+  renderHistory();
+}
+
+function renderHistory() {
+  const filterDate = document.getElementById('filter-date').value;
+  document.getElementById('clear-filter').style.display = filterDate ? '' : 'none';
+
+  const wos = getWorkouts()
+    .filter(w => !filterDate || w.date === filterDate)
+    .sort((a,b) => b.date.localeCompare(a.date) || (b.createdAt||'').localeCompare(a.createdAt||''));
+
+  const container = document.getElementById('history-list');
+  if (!wos.length) {
+    container.innerHTML = `<div class="empty-state">
+      <p>${filterDate ? 'No workouts on this date.' : 'No workouts logged yet.'}</p>
+      ${!filterDate ? `<button class="btn btn-primary btn-sm mt-12" onclick="openWoModal()">Log Your First Workout</button>` : ''}
+    </div>`;
+    return;
+  }
+  container.innerHTML = wos.map(w => buildWoCard(w)).join('');
+}
+
+function clearFilter() {
+  document.getElementById('filter-date').value = '';
+  renderHistory();
+}
+
+function buildWoCard(w) {
+  const totalSets = w.exercises.reduce((s,e) => s+e.sets.length, 0);
+  const exDetails = w.exercises.map(ex => {
+    const isSt = ex.category === 'strength' || ex.category === 'bodyweight';
+    const isWt = ex.category === 'strength';
+    const isCa = ex.category === 'cardio';
+    const catLabel = CATS.find(c=>c.v===ex.category)?.l || ex.category;
+    const catBadge = ex.category==='cardio' ? 'badge-blue' : ex.category==='bodyweight' ? 'badge-green' : 'badge-purple';
+    const headers = ['Set', ...(isSt?['Reps']:[]), ...(isWt?['Weight']:[]), ...(isCa?['Distance','Duration']:[])].map(h=>`<th>${h}</th>`).join('');
+    const rows = ex.sets.map(s => {
+      const cells = [`<td>${s.setNumber}</td>`,
+        ...(isSt?[`<td>${s.reps||'—'}</td>`]:[]),
+        ...(isWt?[`<td>${s.weightKg?s.weightKg+' kg':'—'}</td>`]:[]),
+        ...(isCa?[`<td>${s.distanceKm?s.distanceKm+' km':'—'}</td>`,`<td>${s.durationMin?s.durationMin+' min':'—'}</td>`]:[]),
+      ].join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<div style="margin-bottom:12px">
+      <div class="wo-ex-name">${ex.name||'Unnamed Exercise'} <span class="badge ${catBadge}">${catLabel}</span></div>
+      <table class="det-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+  }).join('');
+
+  return `<div class="card wo-card" id="wo-${w.id}">
+    <div class="wo-card-header">
+      <div>
+        <div class="wo-name">${w.name}</div>
+        <div class="wo-date">${fmtDateLong(w.date)}</div>
+      </div>
+      <div>
+        <div class="flex-center gap-6 flex-wrap">
+          ${w.durationMinutes?`<span class="badge badge-purple">${w.durationMinutes} min</span>`:''}
+          <span class="badge badge-blue">${w.exercises.length} exercise${w.exercises.length!==1?'s':''}</span>
+          <span class="badge badge-green">${totalSets} sets</span>
+        </div>
+        <div class="flex-center gap-6 mt-8">
+          <button class="btn btn-secondary btn-sm" onclick="toggleDetails('${w.id}')">▼ Details</button>
+          <button class="btn btn-danger btn-sm" onclick="removeWorkout('${w.id}')">Delete</button>
+        </div>
+      </div>
+    </div>
+    <div class="wo-details hidden" id="det-${w.id}">
+      ${w.notes?`<div class="wo-notes">${w.notes}</div>`:''}
+      ${exDetails}
+    </div>
+  </div>`;
+}
+
+function toggleDetails(id) {
+  const det = document.getElementById('det-'+id);
+  const btn = det.previousElementSibling.querySelector('.btn-secondary');
+  const isHidden = det.classList.toggle('hidden');
+  btn.textContent = isHidden ? '▼ Details' : '▲ Hide';
+}
+
+function removeWorkout(id) {
+  if (!confirm('Delete this workout?')) return;
+  deleteWorkout(id);
+  renderAll();
+}
+
+// ─── Workout modal ───────────────────────────────────────────────────────────
+function openWoModal() {
+  exercises = [];
+  document.getElementById('wo-name').value  = '';
+  document.getElementById('wo-date').value  = todayStr();
+  document.getElementById('wo-dur').value   = '';
+  document.getElementById('wo-notes').value = '';
+  document.getElementById('wo-error').classList.add('hidden');
+  document.getElementById('exercises-container').innerHTML = `<div id="ex-empty" class="empty-state" style="padding:20px 0"><p>Click "Add Exercise" to build your workout</p></div>`;
+  document.getElementById('wo-modal').classList.remove('hidden');
+}
+
+function closeWoModal() {
+  document.getElementById('wo-modal').classList.add('hidden');
+}
+
+function addExercise() {
+  const id = genId();
+  exercises.push({ id, name:'', category:'strength', sets:[{id:genId(),n:1,reps:'',weight:'',dist:'',dur:''}] });
+  document.getElementById('ex-empty')?.remove();
+  const div = document.createElement('div');
+  div.id = 'ex-' + id;
+  document.getElementById('exercises-container').appendChild(div);
+  renderExercise(id);
+}
+
+function renderExercise(id) {
+  const ex  = exercises.find(e => e.id === id);
+  if (!ex) return;
+  const isSt = ex.category === 'strength' || ex.category === 'bodyweight';
+  const isWt = ex.category === 'strength';
+  const isCa = ex.category === 'cardio';
+  const sugs = (SUGGESTIONS[ex.category]||[]).map(s=>`<option value="${s}">`).join('');
+  const thRow = ['Set', ...(isSt?['Reps']:[]), ...(isWt?['Weight (kg)']:[]), ...(isCa?['Dist (km)','Dur (min)']:[]), ''].map(h=>`<th>${h}</th>`).join('');
+  const rows  = ex.sets.map(s => {
+    return `<tr>
+      <td class="set-num">${s.n}</td>
+      ${isSt?`<td><input class="form-input set-input" type="number" placeholder="—" value="${s.reps}" onchange="updateSet('${id}','${s.id}','reps',this.value)"/></td>`:''}
+      ${isWt?`<td><input class="form-input set-input" type="number" placeholder="—" value="${s.weight}" onchange="updateSet('${id}','${s.id}','weight',this.value)"/></td>`:''}
+      ${isCa?`<td><input class="form-input set-input" type="number" placeholder="—" value="${s.dist}" onchange="updateSet('${id}','${s.id}','dist',this.value)"/></td>`:''}
+      ${isCa?`<td><input class="form-input set-input" type="number" placeholder="—" value="${s.dur}" onchange="updateSet('${id}','${s.id}','dur',this.value)"/></td>`:''}
+      <td>${ex.sets.length>1?`<button class="btn btn-ghost btn-xs" onclick="removeSet('${id}','${s.id}')">×</button>`:''}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('ex-'+id).innerHTML = `
+    <datalist id="sugs-${id}">${sugs}</datalist>
+    <div class="ex-block">
+      <div class="ex-header">
+        <input class="form-input" list="sugs-${id}" placeholder="Exercise name" value="${ex.name}" onchange="updateExName('${id}',this.value)"/>
+        <select onchange="updateExCat('${id}',this.value)">
+          ${CATS.map(c=>`<option value="${c.v}"${c.v===ex.category?' selected':''}>${c.l}</option>`).join('')}
+        </select>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="removeExercise('${id}')">✕</button>
+      </div>
+      <div class="sets-wrap">
+        <table class="sets-table">
+          <thead><tr>${thRow}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <button class="btn btn-ghost btn-sm mt-8" onclick="addSet('${id}')">+ Add Set</button>
+    </div>`;
+}
+
+function updateExName(id, val)  { const ex = exercises.find(e=>e.id===id); if(ex) ex.name = val; }
+function updateExCat(id, val)   { const ex = exercises.find(e=>e.id===id); if(ex){ex.category=val; renderExercise(id);} }
+function updateSet(id,sid,field,val) { const ex=exercises.find(e=>e.id===id); const s=ex?.sets.find(s=>s.id===sid); if(s) s[field]=val; }
+
+function addSet(id) {
+  const ex = exercises.find(e=>e.id===id);
+  if (!ex) return;
+  ex.sets.push({id:genId(), n:ex.sets.length+1, reps:'', weight:'', dist:'', dur:''});
+  renderExercise(id);
+}
+
+function removeSet(id, sid) {
+  const ex = exercises.find(e=>e.id===id);
+  if (!ex) return;
+  ex.sets = ex.sets.filter(s=>s.id!==sid).map((s,i)=>({...s,n:i+1}));
+  renderExercise(id);
+}
+
+function removeExercise(id) {
+  exercises = exercises.filter(e=>e.id!==id);
+  document.getElementById('ex-'+id).remove();
+  if (!exercises.length) {
+    const c = document.getElementById('exercises-container');
+    c.innerHTML = `<div id="ex-empty" class="empty-state" style="padding:20px 0"><p>Click "Add Exercise" to build your workout</p></div>`;
+  }
+}
+
+function saveWorkout() {
+  const name = document.getElementById('wo-name').value.trim();
+  const err  = document.getElementById('wo-error');
+  if (!name)             { err.textContent='Please enter a workout name.'; err.classList.remove('hidden'); return; }
+  if (!exercises.length) { err.textContent='Add at least one exercise.';   err.classList.remove('hidden'); return; }
+  err.classList.add('hidden');
+
+  const wo = {
+    id:              genId(),
+    name,
+    date:            document.getElementById('wo-date').value || todayStr(),
+    durationMinutes: Number(document.getElementById('wo-dur').value) || null,
+    notes:           document.getElementById('wo-notes').value.trim(),
+    exercises:       exercises.map(ex => ({
+      id:       ex.id,
+      name:     ex.name || 'Unnamed Exercise',
+      category: ex.category,
+      sets:     ex.sets.map(s => ({
+        id:          s.id,
+        setNumber:   s.n,
+        reps:        s.reps    || null,
+        weightKg:    s.weight  || null,
+        distanceKm:  s.dist    || null,
+        durationMin: s.dur     || null,
+      })),
+    })),
+    createdAt: new Date().toISOString(),
+  };
+  addWorkout(wo);
+  closeWoModal();
+  renderAll();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>

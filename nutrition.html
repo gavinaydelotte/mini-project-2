@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitTrack — Nutrition</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    /* ── Summary badges ──────────────────────────────────────── */
+    .nut-badges { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+    .nut-badge {
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--bg-elevated); border-radius: var(--radius-sm);
+      padding: 10px 16px; min-width: 72px;
+    }
+    .nut-badge-val   { font-size: 1.1rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .nut-badge-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── Macro progress ──────────────────────────────────────── */
+    .macro-row { margin-bottom: 10px; }
+    .macro-row-hd { display: flex; justify-content: space-between; font-size: .85rem; margin-bottom: 5px; }
+
+    /* ── Meal section ────────────────────────────────────────── */
+    .meal-section { margin-bottom: 16px; }
+    .meal-sec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .meal-icon { font-size: 1.2rem; margin-right: 6px; }
+
+    .meal-table-header, .meal-item-row, .meal-subtotal {
+      display: grid;
+      grid-template-columns: 1fr 68px 68px 42px 42px 42px 36px;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 0;
+    }
+    .meal-table-header {
+      font-size: .72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .meal-item-row { border-bottom: 1px solid var(--border); font-size: .875rem; }
+    .meal-item-row:last-of-type { border-bottom: none; }
+    .meal-item-row:hover { background: var(--bg-elevated); border-radius: 6px; }
+    .meal-item-name { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+    .meal-item-brand { font-size: .72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meal-subtotal { border-top: 1px solid var(--border); color: var(--text-muted); font-size: .875rem; padding-top: 8px; }
+
+    .meal-empty { padding: 16px 0 4px; }
+
+    /* ── Search ──────────────────────────────────────────────── */
+    .search-wrap { position: relative; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .search-wrap .search-icon { position: absolute; left: 10px; pointer-events: none; font-size: 1rem; }
+    .search-input { padding-left: 34px !important; }
+
+    .search-results {
+      max-height: 300px; overflow-y: auto;
+      border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px;
+    }
+    .sr-label { padding: 7px 12px; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+    .sr-item { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--transition); }
+    .sr-item:last-child { border-bottom: none; }
+    .sr-item:hover { background: var(--bg-elevated); }
+    .sr-name { font-size: .875rem; font-weight: 500; margin-bottom: 4px; }
+    .sr-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+    /* ── Add panel ───────────────────────────────────────────── */
+    .add-panel { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; }
+    .add-panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .add-panel-name { font-weight: 600; font-size: 1rem; }
+    .base-macros { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+    .base-macro { font-size: .8rem; color: var(--text-muted); }
+    .base-macro strong { color: var(--text); }
+    .amount-row { display: flex; gap: 8px; align-items: center; }
+
+    .preview-grid { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+    .preview-item { display: flex; flex-direction: column; align-items: center; }
+    .preview-val   { font-size: 1.25rem; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+    .preview-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><span>FitTrack</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html"     class="nav-link">Dashboard</a></li>
+    <li><a href="nutrition.html" class="nav-link active">Nutrition</a></li>
+    <li><a href="workouts.html"  class="nav-link">Workouts</a></li>
+    <li><a href="progress.html"  class="nav-link">Progress</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header-row">
+    <div>
+      <h1>Nutrition</h1>
+      <p>Track your daily food intake and macros</p>
+    </div>
+    <div class="flex-center gap-8">
+      <label class="form-label" style="margin:0" for="nut-date">Date:</label>
+      <input type="date" id="nut-date" class="form-input" style="width:auto" />
+    </div>
+  </div>
+
+  <!-- Daily summary -->
+  <div class="card mb-20" id="summary-card">
+    <div class="flex-between mb-12">
+      <h3 id="summary-title">Today's Summary</h3>
+      <span id="cal-badge" class="badge badge-green">0 / 2000 kcal</span>
+    </div>
+    <div class="progress-bar mb-4">
+      <div class="progress-bar-fill" id="sum-cal-bar" style="width:0%;height:12px;background:linear-gradient(90deg,var(--accent),var(--green))"></div>
+    </div>
+    <div class="text-muted font-xs mb-14" id="sum-cal-text">2000 kcal remaining</div>
+    <div class="nut-badges" id="sum-badges"></div>
+    <div id="sum-macro-bars"></div>
+  </div>
+
+  <!-- Meal sections inserted here -->
+  <div id="meal-sections"></div>
+
+</div>
+
+<!-- ═══ ADD FOOD MODAL ════════════════════════════════════════════════════════ -->
+<div id="add-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2 id="modal-title">Add Food</h2>
+      <button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab active" id="tab-search" onclick="switchTab('search')">Search Database</button>
+        <button class="tab"        id="tab-manual" onclick="switchTab('manual')">Manual Entry</button>
+      </div>
+
+      <!-- Search tab -->
+      <div id="pane-search">
+        <div class="search-wrap">
+          <input class="form-input" id="food-query" placeholder="Search USDA food database (e.g. chicken breast, oatmeal, apple)..." oninput="onQueryInput()" />
+          <span id="search-spinner" class="spinner hidden"></span>
+        </div>
+        <div class="alert alert-info font-xs mb-12">
+          Powered by USDA FoodData Central. Uses DEMO_KEY (~30 searches/hr).
+          <a href="https://fdc.nal.usda.gov/api-guide.html" target="_blank" style="color:var(--blue);margin-left:4px">Get a free key</a>
+        </div>
+        <div id="search-error" class="alert alert-error hidden"></div>
+        <div id="search-results" class="hidden"></div>
+        <div id="add-panel" class="hidden"></div>
+        <div id="search-empty" class="empty-state">
+          <p>Type a food name to search 400,000+ foods</p>
+        </div>
+      </div>
+
+      <!-- Manual tab -->
+      <div id="pane-manual" class="hidden">
+        <div class="form-group">
+          <label class="form-label">Food Name *</label>
+          <input class="form-input" id="m-name" placeholder="e.g. Homemade chicken soup" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Calories (kcal) *</label>
+            <input class="form-input" id="m-cal" type="number" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Protein (g)</label>
+            <input class="form-input" id="m-protein" type="number" placeholder="0" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Carbohydrates (g)</label>
+            <input class="form-input" id="m-carbs" type="number" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fat (g)</label>
+            <input class="form-input" id="m-fat" type="number" placeholder="0" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fiber (g)</label>
+          <input class="form-input" id="m-fiber" type="number" placeholder="0" />
+        </div>
+        <div class="flex-end">
+          <button class="btn btn-primary" onclick="addManual()">Add Food</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/usda.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let currentDate    = todayStr();
+let currentMealType= 'breakfast';
+let selectedFood   = null;
+let searchTimer    = null;
+
+// ── Date picker ────────────────────────────────────────────────────────────
+const datePicker = document.getElementById('nut-date');
+datePicker.value = currentDate;
+datePicker.addEventListener('change', () => { currentDate = datePicker.value; renderAll(); });
+
+// ── Render everything ──────────────────────────────────────────────────────
+function renderAll() {
+  const profile = getProfile();
+  const cGoal   = profile.calorieGoal || 2000;
+  const pGoal   = profile.proteinGoal || 150;
+  const carbGoal= profile.carbsGoal   || 200;
+  const fGoal   = profile.fatGoal     || 65;
+
+  const meals = getMeals().filter(m => m.date === currentDate);
+  const totals = meals.reduce((a, m) => ({
+    cal:  a.cal  + (m.nutrients.calories || 0),
+    prot: a.prot + (m.nutrients.protein  || 0),
+    carb: a.carb + (m.nutrients.carbs    || 0),
+    fat:  a.fat  + (m.nutrients.fat      || 0),
+    fib:  a.fib  + (m.nutrients.fiber    || 0),
+  }), {cal:0,prot:0,carb:0,fat:0,fib:0});
+
+  const isToday = currentDate === todayStr();
+  document.getElementById('summary-title').textContent =
+    isToday ? "Today's Summary" : `Summary for ${fmtDate(currentDate)}`;
+
+  const calPct = Math.min((totals.cal / cGoal) * 100, 100);
+  const rem    = Math.round(cGoal - totals.cal);
+  const badge  = document.getElementById('cal-badge');
+  badge.textContent = `${Math.round(totals.cal)} / ${cGoal} kcal`;
+  badge.className   = `badge ${totals.cal > cGoal ? 'badge-red' : totals.cal > cGoal*.9 ? 'badge-orange' : 'badge-green'}`;
+  document.getElementById('sum-cal-bar').style.width = calPct + '%';
+  document.getElementById('sum-cal-bar').style.background = totals.cal > cGoal ? 'var(--red)' : 'linear-gradient(90deg,var(--accent),var(--green))';
+  document.getElementById('sum-cal-text').textContent =
+    rem >= 0 ? `${rem.toLocaleString()} kcal remaining` : `${Math.abs(rem).toLocaleString()} kcal over goal`;
+
+  // Badges
+  const badgeData = [
+    {val: Math.round(totals.cal)  + ' kcal', label:'Calories', color:'var(--accent)'},
+    {val: Math.round(totals.prot) + 'g',     label:'Protein',  color:'var(--blue)'},
+    {val: Math.round(totals.carb) + 'g',     label:'Carbs',    color:'var(--orange)'},
+    {val: Math.round(totals.fat)  + 'g',     label:'Fat',      color:'var(--accent)'},
+    {val: Math.round(totals.fib)  + 'g',     label:'Fiber',    color:'var(--green)'},
+  ];
+  document.getElementById('sum-badges').innerHTML = badgeData.map(b =>
+    `<div class="nut-badge" style="border-top:2px solid ${b.color}">
+       <span class="nut-badge-val" style="color:${b.color}">${b.val}</span>
+       <span class="nut-badge-label">${b.label}</span>
+     </div>`).join('');
+
+  // Macro bars
+  function mBar(label, val, goal, color) {
+    const pct = goal > 0 ? Math.min((val/goal)*100,100) : 0;
+    return `<div class="macro-row">
+      <div class="macro-row-hd">
+        <span>${label}</span>
+        <span class="text-muted font-xs">${Math.round(val)}g / ${goal}g</span>
+      </div>
+      <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }
+  document.getElementById('sum-macro-bars').innerHTML =
+    mBar('Protein', totals.prot, pGoal, 'var(--blue)') +
+    mBar('Carbohydrates', totals.carb, carbGoal, 'var(--orange)') +
+    mBar('Fat', totals.fat, fGoal, 'var(--accent)');
+
+  // Meal sections
+  const TYPES = [
+    {key:'breakfast', label:'Breakfast'},
+    {key:'lunch',     label:'Lunch'},
+    {key:'dinner',    label:'Dinner'},
+    {key:'snacks',    label:'Snacks'},
+  ];
+  document.getElementById('meal-sections').innerHTML = TYPES.map(t => {
+    const items = meals.filter(m => m.mealType === t.key);
+    const sub   = items.reduce((a,m) => ({
+      cal:  a.cal  + (m.nutrients.calories||0),
+      prot: a.prot + (m.nutrients.protein||0),
+      carb: a.carb + (m.nutrients.carbs||0),
+      fat:  a.fat  + (m.nutrients.fat||0),
+    }), {cal:0,prot:0,carb:0,fat:0});
+
+    const rows = items.length ? `
+      <div class="meal-table-header"><span>Food</span><span>Amount</span><span>Calories</span><span>P</span><span>C</span><span>F</span><span></span></div>
+      ${items.map(item => `
+        <div class="meal-item-row">
+          <div class="meal-item-name">
+            <span class="truncate">${item.description}</span>
+            ${item.brandOwner ? `<span class="meal-item-brand">${item.brandOwner}</span>` : ''}
+          </div>
+          <span class="text-muted font-sm">${item.grams != null ? item.grams+'g' : 'custom'}</span>
+          <span class="font-medium">${item.nutrients.calories}</span>
+          <span class="text-muted font-sm">${Math.round(item.nutrients.protein)}g</span>
+          <span class="text-muted font-sm">${Math.round(item.nutrients.carbs)}g</span>
+          <span class="text-muted font-sm">${Math.round(item.nutrients.fat)}g</span>
+          <button class="btn btn-danger btn-xs btn-icon" onclick="removeItem('${item.id}')">✕</button>
+        </div>`).join('')}
+      <div class="meal-subtotal">
+        <span class="font-xs">Subtotal</span><span></span>
+        <span class="font-bold">${Math.round(sub.cal)}</span>
+        <span>${Math.round(sub.prot)}g</span>
+        <span>${Math.round(sub.carb)}g</span>
+        <span>${Math.round(sub.fat)}g</span>
+        <span></span>
+      </div>` :
+      `<div class="meal-empty"><span class="text-muted font-sm">No foods logged — click "Add Food"</span></div>`;
+
+    return `<div class="card meal-section">
+      <div class="meal-sec-header">
+        <div class="flex-center gap-8">
+          <h3>${t.label}</h3>
+          ${items.length ? `<span class="badge badge-purple">${Math.round(sub.cal)} kcal</span>` : ''}
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="openModal('${t.key}')">+ Add Food</button>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+renderAll();
+
+// ── Remove item ────────────────────────────────────────────────────────────
+function removeItem(id) {
+  deleteMeal(id);
+  renderAll();
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+function openModal(mealType) {
+  currentMealType = mealType;
+  const labels = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner',snacks:'Snacks'};
+  document.getElementById('modal-title').textContent = `Add Food to ${labels[mealType]}`;
+  document.getElementById('add-modal').classList.remove('hidden');
+  // Reset
+  document.getElementById('food-query').value = '';
+  document.getElementById('search-results').innerHTML = '';
+  document.getElementById('search-results').classList.add('hidden');
+  document.getElementById('add-panel').innerHTML = '';
+  document.getElementById('add-panel').classList.add('hidden');
+  document.getElementById('search-empty').classList.remove('hidden');
+  document.getElementById('search-error').classList.add('hidden');
+  selectedFood = null;
+  setTimeout(() => document.getElementById('food-query').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('add-modal').classList.add('hidden');
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('pane-search').classList.toggle('hidden', tab !== 'search');
+  document.getElementById('pane-manual').classList.toggle('hidden', tab !== 'manual');
+  document.getElementById('tab-search').classList.toggle('active', tab === 'search');
+  document.getElementById('tab-manual').classList.toggle('active', tab === 'manual');
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────
+function onQueryInput() {
+  clearTimeout(searchTimer);
+  const q = document.getElementById('food-query').value.trim();
+  document.getElementById('search-results').classList.add('hidden');
+  document.getElementById('add-panel').classList.add('hidden');
+  document.getElementById('search-error').classList.add('hidden');
+  selectedFood = null;
+  if (!q) { document.getElementById('search-empty').classList.remove('hidden'); return; }
+  document.getElementById('search-empty').classList.add('hidden');
+  document.getElementById('search-spinner').classList.remove('hidden');
+  searchTimer = setTimeout(() => doSearch(q), 700);
+}
+
+async function doSearch(q) {
+  try {
+    const foods = await searchFoods(q);
+    document.getElementById('search-spinner').classList.add('hidden');
+    if (!foods.length) {
+      showSearchError('No foods found. Try different keywords or use Manual Entry.');
+      return;
+    }
+    const ul = document.getElementById('search-results');
+    ul.innerHTML = `<div class="sr-label">${foods.length} results — click to select</div>` +
+      foods.map((f, i) => `
+        <div class="sr-item" onclick="selectFood(${i})">
+          <div class="sr-name">${f.description}</div>
+          <div class="sr-meta">
+            ${f.brandOwner ? `<span class="text-muted font-xs">${f.brandOwner} ·</span>` : ''}
+            <span class="badge badge-purple">${f.nutrients.calories} kcal</span>
+            <span class="badge badge-blue">P: ${f.nutrients.protein}g</span>
+            <span class="badge badge-orange">C: ${f.nutrients.carbs}g</span>
+            <span class="text-muted font-xs">per 100g</span>
+          </div>
+        </div>`).join('');
+    ul._foods = foods;
+    ul.classList.remove('hidden');
+  } catch(e) {
+    document.getElementById('search-spinner').classList.add('hidden');
+    showSearchError(e.message);
+  }
+}
+
+function showSearchError(msg) {
+  const el = document.getElementById('search-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function selectFood(i) {
+  const ul = document.getElementById('search-results');
+  selectedFood = ul._foods[i];
+  ul.classList.add('hidden');
+  renderAddPanel();
+}
+
+function renderAddPanel() {
+  const f = selectedFood;
+  const grams = 100;
+  const panel = document.getElementById('add-panel');
+  panel.innerHTML = `
+    <div class="add-panel">
+      <div class="add-panel-header">
+        <div>
+          <div class="add-panel-name">${f.description}</div>
+          ${f.brandOwner ? `<div class="text-muted font-sm">${f.brandOwner}</div>` : ''}
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="backToResults()">← Back</button>
+      </div>
+      <div class="base-macros">
+        <span class="text-muted font-xs">Per 100g:</span>
+        <span class="base-macro"><strong>${f.nutrients.calories}</strong> kcal</span>
+        <span class="base-macro"><strong>${f.nutrients.protein}g</strong> protein</span>
+        <span class="base-macro"><strong>${f.nutrients.carbs}g</strong> carbs</span>
+        <span class="base-macro"><strong>${f.nutrients.fat}g</strong> fat</span>
+        ${f.servingSize ? `<span class="badge badge-blue">Serving: ${f.servingSize}${f.servingSizeUnit}</span>` : ''}
+      </div>
+      <div class="form-group mt-12">
+        <label class="form-label">Amount (grams)</label>
+        <div class="amount-row">
+          <input class="form-input" id="gram-input" type="number" min="1" value="${grams}" oninput="updatePreview()" style="max-width:120px" />
+          ${f.servingSize ? `<button class="btn btn-secondary btn-sm" onclick="useServing()">Use serving (${Math.round(f.servingSize)}${f.servingSizeUnit})</button>` : ''}
+        </div>
+      </div>
+      <div id="food-preview" class="mt-12 card" style="background:var(--bg-elevated)"></div>
+      <div class="flex-end mt-16">
+        <button class="btn btn-primary" onclick="addFromSearch()">Add to ${document.getElementById('modal-title').textContent.replace('Add Food to ','')}</button>
+      </div>
+    </div>`;
+  panel.classList.remove('hidden');
+  updatePreview();
+}
+
+function updatePreview() {
+  if (!selectedFood) return;
+  const grams = Math.max(1, Number(document.getElementById('gram-input').value) || 1);
+  const n = scaleNutrients(selectedFood.nutrients, grams);
+  document.getElementById('food-preview').innerHTML = `
+    <div class="text-muted font-xs mb-8">For ${grams}g:</div>
+    <div class="preview-grid">
+      <div class="preview-item"><div class="preview-val" style="color:var(--accent)">${n.calories}</div><div class="preview-label">kcal</div></div>
+      <div class="preview-item"><div class="preview-val" style="color:var(--blue)">${n.protein}g</div><div class="preview-label">Protein</div></div>
+      <div class="preview-item"><div class="preview-val" style="color:var(--orange)">${n.carbs}g</div><div class="preview-label">Carbs</div></div>
+      <div class="preview-item"><div class="preview-val" style="color:var(--accent)">${n.fat}g</div><div class="preview-label">Fat</div></div>
+      ${n.fiber > 0 ? `<div class="preview-item"><div class="preview-val" style="color:var(--green)">${n.fiber}g</div><div class="preview-label">Fiber</div></div>` : ''}
+    </div>`;
+}
+
+function useServing() {
+  document.getElementById('gram-input').value = Math.round(selectedFood.servingSize);
+  updatePreview();
+}
+
+function backToResults() {
+  document.getElementById('add-panel').classList.add('hidden');
+  document.getElementById('add-panel').innerHTML = '';
+  document.getElementById('search-results').classList.remove('hidden');
+  selectedFood = null;
+}
+
+function addFromSearch() {
+  const grams = Math.max(1, Number(document.getElementById('gram-input').value) || 1);
+  const n     = scaleNutrients(selectedFood.nutrients, grams);
+  addMeal({
+    id:          genId(),
+    date:        currentDate,
+    mealType:    currentMealType,
+    description: selectedFood.description,
+    brandOwner:  selectedFood.brandOwner,
+    fdcId:       selectedFood.fdcId,
+    grams,
+    nutrients:   n,
+    addedAt:     new Date().toISOString(),
+  });
+  renderAll();
+  // Reset for another food
+  document.getElementById('add-panel').classList.add('hidden');
+  document.getElementById('add-panel').innerHTML = '';
+  document.getElementById('food-query').value = '';
+  document.getElementById('search-results').classList.add('hidden');
+  document.getElementById('search-empty').classList.remove('hidden');
+  selectedFood = null;
+  document.getElementById('food-query').focus();
+}
+
+// ── Manual add ─────────────────────────────────────────────────────────────
+function addManual() {
+  const name = document.getElementById('m-name').value.trim();
+  const cal  = Number(document.getElementById('m-cal').value);
+  if (!name || !cal) { alert('Name and Calories are required.'); return; }
+  addMeal({
+    id:          genId(),
+    date:        currentDate,
+    mealType:    currentMealType,
+    description: name,
+    brandOwner:  '',
+    fdcId:       null,
+    grams:       null,
+    nutrients: {
+      calories: cal,
+      protein:  Number(document.getElementById('m-protein').value) || 0,
+      carbs:    Number(document.getElementById('m-carbs').value)   || 0,
+      fat:      Number(document.getElementById('m-fat').value)     || 0,
+      fiber:    Number(document.getElementById('m-fiber').value)   || 0,
+    },
+    addedAt: new Date().toISOString(),
+  });
+  renderAll();
+  closeModal();
+}
+</script>
+</body>
+</html>
